@@ -338,8 +338,8 @@
         </div>
     </div>
 
-    <!-- QuaggaJS 库 -->
-    <script src="https://unpkg.com/quagga@0.12.1/dist/quagga.min.js"></script>
+    <!-- ZXing-js 库 (草蜢扫码) -->
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 
     <script>
         let isScanning = false;
@@ -381,7 +381,7 @@
             }
         }
 
-        function startCamera() {
+        async function startCamera() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 showResult('您的浏览器不支持摄像头功能，请手动输入条形码', 'error');
                 return;
@@ -394,59 +394,71 @@
             scannerDiv.style.borderRadius = '10px';
             scannerDiv.style.overflow = 'hidden';
 
-            const config = {
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: scannerDiv,
-                    constraints: {
-                        width: 400,
-                        height: 250,
-                        facing: "environment"
-                    }
-                },
-                decoder: {
-                    readers: [
-                        "code_128_reader",
-                        "ean_reader",
-                        "ean_8_reader",
-                        "code_39_reader",
-                        "upc_reader"
-                    ]
-                },
-                locate: true
-            };
+            try {
+                // 创建video元素
+                const video = document.createElement('video');
+                video.style.width = '100%';
+                video.style.height = '100%';
+                video.style.objectFit = 'cover';
+                scannerDiv.innerHTML = '';
+                scannerDiv.appendChild(video);
 
-            Quagga.init(config, function(err) {
-                if (err) {
-                    console.error('摄像头启动失败:', err);
-                    showResult('摄像头启动失败，请检查权限或手动输入条形码', 'error');
-                    return;
-                }
+                // 获取摄像头流
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 400 },
+                        height: { ideal: 250 }
+                    }
+                });
+
+                video.srcObject = stream;
+                video.play();
+
+                // 初始化ZXing扫码器
+                const codeReader = new ZXing.BrowserMultiFormatReader();
                 
-                Quagga.start();
                 cameraActive = true;
                 isScanning = true;
                 updateCameraButton();
                 showResult('摄像头已启动，请将条形码对准摄像头', 'success');
-            });
 
-            // 监听扫描结果
-            Quagga.onDetected(function(result) {
-                const code = result.codeResult.code;
-                document.getElementById('barcode').value = code;
-                showResult(`扫描成功！检测到条形码：${code}`, 'success');
-                stopCamera();
-            });
+                // 开始扫描
+                codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+                    if (result) {
+                        const code = result.getText();
+                        document.getElementById('barcode').value = code;
+                        showResult(`扫描成功！检测到条形码：${code}`, 'success');
+                        stopCamera();
+                    }
+                    // 忽略错误，继续扫描
+                });
+
+                // 保存扫码器实例以便后续停止
+                window.currentCodeReader = codeReader;
+                window.currentVideoStream = stream;
+
+            } catch (error) {
+                console.error('摄像头启动失败:', error);
+                showResult('摄像头启动失败，请检查权限或手动输入条形码', 'error');
+                cameraActive = false;
+                updateCameraButton();
+            }
         }
 
         function stopCamera() {
-            if (isScanning) {
-                Quagga.stop();
-                isScanning = false;
+            if (window.currentCodeReader) {
+                window.currentCodeReader.reset();
+                window.currentCodeReader = null;
+            }
+            
+            if (window.currentVideoStream) {
+                window.currentVideoStream.getTracks().forEach(track => track.stop());
+                window.currentVideoStream = null;
             }
             
             cameraActive = false;
+            isScanning = false;
             document.getElementById('scanner').style.display = 'none';
             updateCameraButton();
             showResult('摄像头已关闭', 'success');
@@ -460,6 +472,13 @@
         // 页面卸载时清理
         window.addEventListener('beforeunload', function() {
             if (isScanning) {
+                stopCamera();
+            }
+        });
+
+        // 页面可见性变化时处理
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isScanning) {
                 stopCamera();
             }
         });
