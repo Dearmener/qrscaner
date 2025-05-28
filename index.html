@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>条形码登记问卷</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 300;
+        }
+
+        .form-group {
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #555;
+            font-size: 16px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f9f9f9;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            margin: 30px 0;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            min-width: 120px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .button.secondary {
+            background: linear-gradient(45deg, #4caf50, #45a049);
+        }
+
+        .scanner-btn {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+        }
+
+        .instructions {
+            background: #f0f7ff;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 25px 0;
+            border-left: 4px solid #2196f3;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            margin-bottom: 15px;
+            color: #1976d2;
+            font-size: 18px;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin: 8px 0;
+            color: #555;
+        }
+
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.success {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+            color: #2e7d32;
+            display: block;
+        }
+
+        .result.error {
+            background: #ffeee8;
+            border-left: 4px solid #ff5722;
+            color: #d32f2f;
+            display: block;
+        }
+
+        .qr-section {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid #4caf50;
+            display: none;
+        }
+
+        .qr-section.show {
+            display: block;
+        }
+
+        .qr-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #qrcode {
+            border: 3px solid #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .qr-info {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #4caf50;
+            font-size: 14px;
+            color: #2e7d32;
+            text-align: left;
+            width: 100%;
+        }
+
+        .url-display {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .small-button {
+            background: linear-gradient(45deg, #2196f3, #1976d2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .small-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .copy-button {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+        }
+
+        .camera-section {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px dashed #ddd;
+        }
+
+        .camera-placeholder {
+            color: #888;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📱</div>
+        <h1>条形码登记问卷</h1>
+        
+        <div class="instructions">
+            <h3>📋 操作说明：</h3>
+            <ul>
+                <li><strong>方式一：</strong>手动输入条形码到下方输入框</li>
+                <li><strong>方式二：</strong>点击"摄像头扫描"按钮使用摄像头扫描</li>
+                <li>填入条形码后点击"提交问卷"自动跳转到飞书表单</li>
+                <li>条形码将自动填入表单的"登记号"字段</li>
+            </ul>
+        </div>
+
+        <form id="barcodeForm">
+            <div class="form-group">
+                <label for="barcode">🔢 条形码 / 登记号：</label>
+                <input 
+                    type="text" 
+                    id="barcode" 
+                    name="barcode" 
+                    placeholder="请输入条形码或扫描条形码" 
+                    required
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="camera-section" id="cameraSection">
+                <div class="camera-placeholder">📷 摄像头扫描区域</div>
+                <div id="scanner" style="display: none;"></div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="button scanner-btn" onclick="toggleCamera()">
+                    📹 摄像头扫描
+                </button>
+                <button type="submit" class="button secondary">
+                    ✅ 提交问卷
+                </button>
+            </div>
+        </form>
+
+        <div class="result" id="result"></div>
+
+        <!-- 二维码显示区域 -->
+        <div class="qr-section" id="qrSection">
+            <div class="qr-title">
+                📱 扫描二维码访问问卷
+            </div>
+            <div class="qr-container">
+                <div id="qrcode"></div>
+                <div class="qr-info">
+                    <strong>✨ 二维码生成成功！</strong><br>
+                    使用手机扫描上方二维码可直接访问预填充的飞书问卷
+                    <div class="url-display" id="urlDisplay"></div>
+                    <div class="action-buttons">
+                        <button class="small-button" onclick="openUrl()">🔗 直接访问</button>
+                        <button class="small-button copy-button" onclick="copyUrl()">📋 复制链接</button>
+                        <button class="small-button" onclick="downloadQR()">💾 下载二维码</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QuaggaJS 库 -->
+    <script src="https://unpkg.com/quagga@0.12.1/dist/quagga.min.js"></script>
+
+    <script>
+        let isScanning = false;
+        let cameraActive = false;
+        let generatedUrl = '';
+
+        // 表单提交处理
+        document.getElementById('barcodeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const barcode = document.getElementById('barcode').value.trim();
+            
+            if (!barcode) {
+                showResult('请输入条形码！', 'error');
+                return;
+            }
+
+            // 构建飞书表单URL
+            const baseUrl = 'https://sieaywtwsu0.feishu.cn/share/base/form/shrcngZGjaDMyY7iNz5MtbAtPEd';
+            const targetUrl = `${baseUrl}?prefill_登记号=${encodeURIComponent(barcode)}`;
+
+            // 先生成二维码
+            generateQRCode(targetUrl, barcode);
+
+            showResult(`✅ 链接生成成功！条形码：${barcode}`, 'success');
+        });
+
+        function showResult(message, type) {
+            const resultElement = document.getElementById('result');
+            resultElement.textContent = message;
+            resultElement.className = `result ${type}`;
+        }
+
+        function toggleCamera() {
+            if (!cameraActive) {
+                startCamera();
+            } else {
+                stopCamera();
+            }
+        }
+
+        function startCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showResult('您的浏览器不支持摄像头功能，请手动输入条形码', 'error');
+                return;
+            }
+
+            const scannerDiv = document.getElementById('scanner');
+            scannerDiv.style.display = 'block';
+            scannerDiv.style.height = '250px';
+            scannerDiv.style.border = '2px solid #667eea';
+            scannerDiv.style.borderRadius = '10px';
+            scannerDiv.style.overflow = 'hidden';
+
+            const config = {
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: scannerDiv,
+                    constraints: {
+                        width: 400,
+                        height: 250,
+                        facing: "environment"
+                    }
+                },
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader",
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "upc_reader"
+                    ]
+                },
+                locate: true
+            };
+
+            Quagga.init(config, function(err) {
+                if (err) {
+                    console.error('摄像头启动失败:', err);
+                    showResult('摄像头启动失败，请检查权限或手动输入条形码', 'error');
+                    return;
+                }
+                
+                Quagga.start();
+                cameraActive = true;
+                isScanning = true;
+                updateCameraButton();
+                showResult('摄像头已启动，请将条形码对准摄像头', 'success');
+            });
+
+            // 监听扫描结果
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                document.getElementById('barcode').value = code;
+                showResult(`扫描成功！检测到条形码：${code}`, 'success');
+                stopCamera();
+            });
+        }
+
+        function stopCamera() {
+            if (isScanning) {
+                Quagga.stop();
+                isScanning = false;
+            }
+            
+            cameraActive = false;
+            document.getElementById('scanner').style.display = 'none';
+            updateCameraButton();
+            showResult('摄像头已关闭', 'success');
+        }
+
+        function updateCameraButton() {
+            const button = document.querySelector('.scanner-btn');
+            button.textContent = cameraActive ? '🔴 关闭摄像头' : '📹 摄像头扫描';
+        }
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', function() {
+            if (isScanning) {
+                stopCamera();
+            }
+        });
+
+        // 生成二维码
+        function generateQRCode(url, barcode) {
+            generatedUrl = url;
+            
+            // 显示二维码区域
+            const qrSection = document.getElementById('qrSection');
+            qrSection.classList.add('show');
+            
+            // 显示URL
+            const urlDisplay = document.getElementById('urlDisplay');
+            urlDisplay.textContent = url;
+            
+            // 使用在线API生成二维码
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+            
+            const qrDiv = document.getElementById('qrcode');
+            qrDiv.innerHTML = `<img src="${qrApiUrl}" alt="飞书问卷二维码" style="width: 200px; height: 200px; border: 3px solid #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">`;
+            
+            console.log('二维码生成成功!');
+            
+            // 滚动到二维码区域
+            setTimeout(() => {
+                qrSection.scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+        }
+
+        // 直接打开URL
+        function openUrl() {
+            if (generatedUrl) {
+                window.open(generatedUrl, '_blank');
+            }
+        }
+
+        // 复制URL到剪贴板
+        function copyUrl() {
+            if (generatedUrl) {
+                navigator.clipboard.writeText(generatedUrl).then(function() {
+                    showResult('链接已复制到剪贴板！', 'success');
+                }, function(err) {
+                    console.error('复制失败:', err);
+                    // 备选方案：使用传统方法复制
+                    const textArea = document.createElement('textarea');
+                    textArea.value = generatedUrl;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        showResult('链接已复制到剪贴板！', 'success');
+                    } catch (err) {
+                        showResult('复制失败，请手动复制链接', 'error');
+                    }
+                    document.body.removeChild(textArea);
+                });
+            }
+        }
+
+        // 下载二维码
+        function downloadQR() {
+            if (generatedUrl) {
+                const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(generatedUrl)}`;
+                const link = document.createElement('a');
+                link.download = '飞书问卷二维码.png';
+                link.href = qrApiUrl;
+                link.click();
+                showResult('二维码图片下载已开始！', 'success');
+            }
+        }
+
+        // 自动聚焦到输入框
+        window.addEventListener('load', function() {
+            document.getElementById('barcode').focus();
+        });
+    </script>
+</body>
+</html>
